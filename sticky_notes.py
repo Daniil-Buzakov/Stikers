@@ -24,7 +24,7 @@ def get_icon_path():
         # Если запущено как EXE
         base_path = sys._MEIPASS
     else:
-        # Если запущено как скрипт
+        # Если запущено как скрипт жопа
         base_path = os.path.dirname(os.path.abspath(__file__))
     
     # Пробуем разные пути
