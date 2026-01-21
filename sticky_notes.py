@@ -7,6 +7,9 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QTextEdit, QVBoxLayout,
                              QCheckBox)
 from PyQt5.QtCore import Qt, QPoint, QSettings, QRect, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QIcon, QFont, QColor
+import requests
+import webbrowser
+from packaging import version
 
 # Настройка High DPI должна быть ДО создания QApplication
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
@@ -572,10 +575,14 @@ class ResizableStickyNote(QWidget):
 
 class StickyNotesApp:
     def __init__(self):
+        self.VERSION = "1.0.0"
+        self.UPDATE_URL = "https://raw.githubusercontent.com/DaniiL-Buzakov/Stikers/main/version.json"
+        self.RELEASES_URL = "https://github.com/DaniiL-Buzakov/Stikers/releases"
         self.app = QApplication(sys.argv)
         self.app.setQuitOnLastWindowClosed(False)
         self.app.setApplicationName("Sticky Notes")
         self.app.setApplicationDisplayName("Стикеры-заметки")
+        
         
         # Устанавливаем иконку приложения
         icon_path = get_icon_path()
