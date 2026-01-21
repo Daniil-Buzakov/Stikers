@@ -1,3 +1,4 @@
+[file content begin]
 import sys
 import json
 import os
@@ -42,12 +43,14 @@ def get_icon_path():
 
 class ResizableStickyNote(QWidget):
     def __init__(self, note_id=1, content="", color="#FFFF99", font_family="Arial", 
-                 font_size=10, size=(300, 300), always_on_top=True, pinned_to_screen=False):
+                 font_size=10, text_color="#000000", size=(300, 300), 
+                 always_on_top=True, pinned_to_screen=False):
         super().__init__()
         self.note_id = note_id
         self.color = color
         self.font_family = font_family
         self.font_size = font_size
+        self.text_color = text_color  # Новый параметр для цвета текста
         self.init_width, self.init_height = size
         self.always_on_top = always_on_top
         self.pinned_to_screen = pinned_to_screen
@@ -87,16 +90,11 @@ class ResizableStickyNote(QWidget):
             }}
         """)
         
-        # Текстовое поле
+        # Текстовое поле с настройкой цвета текста
         self.text_edit = QTextEdit()
-        self.text_edit.setFont(QFont(self.font_family, self.font_size))
-        self.text_edit.setStyleSheet("""
-            QTextEdit {
-                background: transparent;
-                border: none;
-                padding: 10px;
-            }
-        """)
+        font = QFont(self.font_family, self.font_size)
+        self.text_edit.setFont(font)
+        self.updateTextColor()  # Устанавливаем цвет текста
         
         # Кнопки управления (изначально скрытые)
         self.close_btn = QPushButton("×")
@@ -148,6 +146,24 @@ class ResizableStickyNote(QWidget):
             }
         """)
         self.font_btn.clicked.connect(self.changeFont)
+        
+        # Новая кнопка для изменения цвета текста
+        self.text_color_btn = QPushButton("T")
+        self.text_color_btn.setFixedSize(30, 30)
+        self.text_color_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #666666;
+                color: {self.text_color};  # Показываем текущий цвет текста на кнопке
+                border-radius: 15px;
+                font-weight: bold;
+                font-size: 14px;
+                opacity: 0;
+            }}
+            QPushButton:hover {{
+                background-color: #888888;
+            }}
+        """)
+        self.text_color_btn.clicked.connect(self.changeTextColor)
         
         self.new_btn = QPushButton("+")
         self.new_btn.setFixedSize(30, 30)
@@ -227,6 +243,7 @@ class ResizableStickyNote(QWidget):
         button_layout.addWidget(self.new_btn)
         button_layout.addWidget(self.color_btn)
         button_layout.addWidget(self.font_btn)
+        button_layout.addWidget(self.text_color_btn)  # Добавляем кнопку цвета текста
         button_layout.addWidget(self.top_btn)
         button_layout.addWidget(self.pin_btn)
         button_layout.addWidget(self.close_btn)
@@ -271,6 +288,35 @@ class ResizableStickyNote(QWidget):
         # Скрываем кнопки через 2 секунды после создания
         QTimer.singleShot(2000, self.hideButtons)
         
+    def updateTextColor(self):
+        """Обновляет цвет текста в текстовом поле"""
+        style = f"""
+            QTextEdit {{
+                background: transparent;
+                border: none;
+                padding: 10px;
+                color: {self.text_color};
+            }}
+        """
+        self.text_edit.setStyleSheet(style)
+        
+    def updateTextColorButton(self):
+        """Обновляет внешний вид кнопки цвета текста"""
+        style = f"""
+            QPushButton {{
+                background-color: #666666;
+                color: {self.text_color};
+                border-radius: 15px;
+                font-weight: bold;
+                font-size: 14px;
+                opacity: {1 if self.buttons_visible else 0};
+            }}
+            QPushButton:hover {{
+                background-color: #888888;
+            }}
+        """
+        self.text_color_btn.setStyleSheet(style)
+        
     def enterEvent(self, event):
         """При наведении курсора на стикер показываем кнопки"""
         self.showButtons()
@@ -286,6 +332,8 @@ class ResizableStickyNote(QWidget):
         if not self.buttons_visible:
             self.buttons_visible = True
             self.animateButtonsOpacity(0, 1)
+            # Обновляем кнопку цвета текста
+            self.updateTextColorButton()
                 
     def hideButtons(self):
         """Плавно скрываем кнопки"""
@@ -295,7 +343,8 @@ class ResizableStickyNote(QWidget):
                 
     def animateButtonsOpacity(self, start, end):
         """Анимируем изменение прозрачности кнопок"""
-        for btn in [self.new_btn, self.color_btn, self.font_btn, self.top_btn, self.pin_btn, self.close_btn]:
+        for btn in [self.new_btn, self.color_btn, self.font_btn, 
+                    self.text_color_btn, self.top_btn, self.pin_btn, self.close_btn]:
             animation = QPropertyAnimation(btn, b"windowOpacity")
             animation.setDuration(200)
             animation.setStartValue(start)
@@ -519,6 +568,15 @@ class ResizableStickyNote(QWidget):
             self.text_edit.setFont(font)
             self.saveSettings()
             
+    def changeTextColor(self):
+        """Изменяет цвет текста заметки"""
+        color = QColorDialog.getColor(QColor(self.text_color), self, "Выберите цвет текста")
+        if color.isValid():
+            self.text_color = color.name()
+            self.updateTextColor()
+            self.updateTextColorButton()
+            self.saveSettings()
+            
     def createNewNote(self):
         if hasattr(self, 'main_window'):
             self.main_window.createNewNote()
@@ -539,6 +597,7 @@ class ResizableStickyNote(QWidget):
         settings.setValue(f"note_{self.note_id}_color", self.color)
         settings.setValue(f"note_{self.note_id}_font_family", self.font_family)
         settings.setValue(f"note_{self.note_id}_font_size", self.font_size)
+        settings.setValue(f"note_{self.note_id}_text_color", self.text_color)  # Сохраняем цвет текста
         settings.setValue(f"note_{self.note_id}_always_on_top", self.always_on_top)
         settings.setValue(f"note_{self.note_id}_pinned_to_screen", self.pinned_to_screen)
         
@@ -562,6 +621,12 @@ class ResizableStickyNote(QWidget):
         self.font_family = font_family
         self.font_size = font_size
         self.text_edit.setFont(QFont(font_family, font_size))
+        
+        # Загружаем цвет текста
+        text_color = settings.value(f"note_{self.note_id}_text_color", self.text_color)
+        self.text_color = text_color
+        self.updateTextColor()
+        self.updateTextColorButton()
         
         self.always_on_top = settings.value(f"note_{self.note_id}_always_on_top", "true").lower() == "true"
         self.pinned_to_screen = settings.value(f"note_{self.note_id}_pinned_to_screen", "false").lower() == "true"
@@ -752,6 +817,7 @@ class StickyNotesApp:
                 "color": note.color,
                 "font_family": note.font_family,
                 "font_size": note.font_size,
+                "text_color": note.text_color,  # Сохраняем цвет текста
                 "width": note.width(),
                 "height": note.height(),
                 "always_on_top": note.always_on_top,
@@ -780,6 +846,7 @@ class StickyNotesApp:
                     note_data.get("color", "#FFFF99"),
                     note_data.get("font_family", "Arial"),
                     note_data.get("font_size", 10),
+                    note_data.get("text_color", "#000000"),  # Загружаем цвет текста
                     (width, height),
                     always_on_top,
                     pinned_to_screen
@@ -797,3 +864,4 @@ class StickyNotesApp:
 if __name__ == "__main__":
     QApplication.setStyle("Fusion")
     StickyNotesApp()
+[file content end]
