@@ -27,4 +27,5 @@
 pip install pyqt5
 
 # Запустите приложение
-python main.py
+
+sticky_notes.py
