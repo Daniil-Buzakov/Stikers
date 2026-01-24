@@ -17,7 +17,7 @@ def create_exe():
         "--onefile",  # Один файл
         "--windowed",  # Без консоли
         "--icon=icon.ico",  # Иконка
-        "--name=Стикеры-заметки",  # Имя приложения
+        "--name=Stickers",  # Имя приложения
         "--add-data=icon.ico;.",  # Добавляем иконку
         "--add-data=version.json;.",  # Добавляем файл версии
         "--hidden-import=PyQt5",  # Явно импортируем PyQt5
