@@ -23,7 +23,7 @@ def create_shortcuts():
             app_path = os.path.abspath("sticky_notes.exe")
             app_dir = os.path.dirname(app_path)
         
-        app_name = "Стикеры-заметки"
+        app_name = "Stickers"
         
         print(f"Приложение: {app_path}")
         print(f"Папка: {app_dir}")
@@ -38,7 +38,7 @@ def create_shortcuts():
             shortcut.Targetpath = app_path
             shortcut.WorkingDirectory = app_dir
             shortcut.IconLocation = app_path
-            shortcut.Description = "Стикеры-заметки"
+            shortcut.Description = "Stickers"
             shortcut.save()
             
             print(f"Ярлык на рабочем столе создан: {shortcut_path}")
@@ -59,7 +59,7 @@ def create_shortcuts():
             shortcut.Targetpath = app_path
             shortcut.WorkingDirectory = app_dir
             shortcut.IconLocation = app_path
-            shortcut.Description = "Стикеры-заметки"
+            shortcut.Description = "Stickers"
             shortcut.save()
             
             print(f"Ярлык в меню Пуск создан: {shortcut_path}")
@@ -90,7 +90,7 @@ def create_shortcuts():
                 shortcut.Targetpath = app_path
                 shortcut.WorkingDirectory = app_dir
                 shortcut.IconLocation = app_path
-                shortcut.Description = "Стикеры-заметки"
+                shortcut.Description = "Stickers"
                 shortcut.save()
                 
                 print(f"Добавлено в автозагрузку (папка): {shortcut_path}")
@@ -105,5 +105,5 @@ def create_shortcuts():
         input("Нажмите Enter для выхода...")
 
 if __name__ == "__main__":
-    print("Создание ярлыков для Стикеры-заметки...")
+    print("Создание ярлыков для Stickers...")
     create_shortcuts()
