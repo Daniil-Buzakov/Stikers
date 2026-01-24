@@ -1,5 +1,6 @@
 {
     "version": "1.1.0",
-    "changelog": "• Еще один релиз\n• Основные функции заметок\n• Система трея\n• Автосохранение\n• Новая работа над цветом и шрифтом\n• Обнавленный интерфейс",
-    "release_date": "2024-01-23"
+    "changelog": "• Автоматическое обновление\n• Улучшенный интерфейс\n• Быстрый запуск\n• Исправлены ошибки",
+    "release_date": "2024-01-23",
+    "download_url": "https://github.com/DaniiL-Buzakov/Stikers/releases/download/v1.1.0/sticky_notes_v1.1.0.zip"
 }

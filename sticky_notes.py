@@ -7,11 +7,12 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QTextEdit, QVBoxLayout,
                              QCheckBox, QDialog, QLabel, QDialogButtonBox,
                              QVBoxLayout as QVBoxLayout2, QMessageBox, QFrame,
                              QGraphicsDropShadowEffect, QSlider, QGroupBox,
-                             QTabWidget, QRadioButton, QButtonGroup, QGridLayout)
-from PyQt5.QtCore import Qt, QPoint, QSettings, QRect, QTimer, QPropertyAnimation, QEasingCurve, QThread, pyqtSignal
-from PyQt5.QtGui import QIcon, QFont, QColor, QPixmap, QPainter, QLinearGradient, QBrush
+                             QTabWidget, QGridLayout)
+from PyQt5.QtCore import Qt, QPoint, QSettings, QRect, QTimer, QPropertyAnimation, QEasingCurve
+from PyQt5.QtGui import QIcon, QFont, QColor, QPixmap, QPainter
 import requests
 import webbrowser
+from update_manager import UpdateManager
 from packaging import version
 from datetime import datetime
 
@@ -40,39 +41,12 @@ def get_icon_path():
     
     return None
 
-class UpdateChecker(QThread):
-    """Поток для проверки обновлений"""
-    update_available = pyqtSignal(dict)
-    no_update = pyqtSignal()
-    error = pyqtSignal(str)
-    
-    def __init__(self, current_version, update_url):
-        super().__init__()
-        self.current_version = current_version
-        self.update_url = update_url
-        self.last_check = None
-        
-    def run(self):
-        try:
-            response = requests.get(self.update_url, timeout=5)
-            response.raise_for_status()
-            update_info = response.json()
-            
-            if version.parse(update_info.get('version', '0.0.0')) > version.parse(self.current_version):
-                self.update_available.emit(update_info)
-            else:
-                self.no_update.emit()
-                
-        except requests.RequestException as e:
-            self.error.emit(f"Ошибка подключения: {str(e)}")
-        except Exception as e:
-            self.error.emit(f"Ошибка: {str(e)}")
-
 class UpdateDialog(QDialog):
     """Диалоговое окно обновления"""
-    def __init__(self, update_info, parent=None):
+    def __init__(self, update_info, current_version, parent=None):
         super().__init__(parent)
         self.update_info = update_info
+        self.current_version = current_version
         self.setWindowTitle("Доступно обновление!")
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setModal(True)
@@ -87,10 +61,9 @@ class UpdateDialog(QDialog):
         title.setStyleSheet("font-size: 16px; font-weight: bold; color: #0066CC;")
         layout.addWidget(title)
         
-        if hasattr(self.parent(), 'VERSION'):
-            current_version = QLabel(f"Текущая версия: {self.parent().VERSION}")
-            current_version.setStyleSheet("color: #666666;")
-            layout.addWidget(current_version)
+        current_version = QLabel(f"Текущая версия: {self.current_version}")
+        current_version.setStyleSheet("color: #666666;")
+        layout.addWidget(current_version)
         
         if 'changelog' in self.update_info:
             changelog_label = QLabel("Что нового:")
@@ -289,14 +262,9 @@ class ColorGradientDialog(QDialog):
     def lighten_color(self, hex_color, percent):
         """Осветляет цвет на заданный процент"""
         hex_color = hex_color.lstrip('#')
-        r = int(hex_color[0:2], 16)
-        g = int(hex_color[2:4], 16)
-        b = int(hex_color[4:6], 16)
-        
-        r = min(255, int(r * (1 + percent/100)))
-        g = min(255, int(g * (1 + percent/100)))
-        b = min(255, int(b * (1 + percent/100)))
-        
+        r = min(255, int(int(hex_color[0:2], 16) * (1 + percent/100)))
+        g = min(255, int(int(hex_color[2:4], 16) * (1 + percent/100)))
+        b = min(255, int(int(hex_color[4:6], 16) * (1 + percent/100)))
         return f"#{r:02x}{g:02x}{b:02x}"
         
     def chooseSolidColor(self):
@@ -890,14 +858,9 @@ class ResizableStickyNote(QWidget):
     def lighten_color(self, hex_color, percent):
         """Осветляет цвет на заданный процент"""
         hex_color = hex_color.lstrip('#')
-        r = int(hex_color[0:2], 16)
-        g = int(hex_color[2:4], 16)
-        b = int(hex_color[4:6], 16)
-        
-        r = min(255, int(r * (1 + percent/100)))
-        g = min(255, int(g * (1 + percent/100)))
-        b = min(255, int(b * (1 + percent/100)))
-        
+        r = min(255, int(int(hex_color[0:2], 16) * (1 + percent/100)))
+        g = min(255, int(int(hex_color[2:4], 16) * (1 + percent/100)))
+        b = min(255, int(int(hex_color[4:6], 16) * (1 + percent/100)))
         return f"#{r:02x}{g:02x}{b:02x}"
         
     def updateTextColor(self):
@@ -1243,7 +1206,7 @@ class ResizableStickyNote(QWidget):
 
 class StickyNotesApp:
     def __init__(self):
-        self.VERSION = "1.0.0"
+        self.VERSION = "1.1.0"
         self.UPDATE_URL = "https://raw.githubusercontent.com/DaniiL-Buzakov/Stikers/main/version.json"
         self.RELEASES_URL = "https://github.com/DaniiL-Buzakov/Stikers/releases"
         self.app = QApplication(sys.argv)
@@ -1284,7 +1247,7 @@ class StickyNotesApp:
         
         # Пункт для ручной проверки обновлений
         check_update_action = QAction("Проверить обновления", self.app)
-        check_update_action.triggered.connect(self.manualCheckUpdate)
+        check_update_action.triggered.connect(self.checkForUpdatesManual)
         tray_menu.addAction(check_update_action)
         
         show_all_action = QAction("Показать все", self.app)
@@ -1340,9 +1303,73 @@ class StickyNotesApp:
             self.createNewNote()
             
         # Запускаем проверку обновлений при старте (с задержкой)
-        QTimer.singleShot(2000, self.checkForUpdates)
+        QTimer.singleShot(2000, self.checkForUpdatesAuto)
         
         sys.exit(self.app.exec_())
+    
+    def checkForUpdatesAuto(self):
+        """Автоматическая проверка обновлений при запуске"""
+        self.checkForUpdates(show_message=False)
+    
+    def checkForUpdatesManual(self):
+        """Ручная проверка обновлений из меню"""
+        self.checkForUpdates(show_message=True)
+    
+    def checkForUpdates(self, show_message=False):
+        """Проверяет наличие обновлений"""
+        try:
+            settings = QSettings("StickyNotes", "Updates")
+            
+            # Проверяем, когда последний раз проверяли
+            last_check = settings.value("last_update_check")
+            today = datetime.now().strftime("%Y-%m-%d")
+            
+            # Проверяем не чаще раза в день (если не ручная проверка)
+            if not show_message and last_check == today:
+                return
+                
+            response = requests.get(self.UPDATE_URL, timeout=5)
+            response.raise_for_status()
+            update_info = response.json()
+            
+            if version.parse(update_info.get('version', '0.0.0')) > version.parse(self.VERSION):
+                self.show_update_dialog(update_info, show_message)
+            else:
+                if show_message:
+                    QMessageBox.information(None, "Проверка обновлений", 
+                                           f"У вас установлена последняя версия ({self.VERSION})")
+                    
+            # Сохраняем дату проверки
+            settings.setValue("last_update_check", today)
+            
+        except requests.RequestException as e:
+            if show_message:
+                QMessageBox.warning(None, "Ошибка проверки обновлений", 
+                                   f"Ошибка подключения: {str(e)}")
+        except Exception as e:
+            if show_message:
+                QMessageBox.warning(None, "Ошибка проверки обновлений", 
+                                   f"Ошибка: {str(e)}")
+    
+    def show_update_dialog(self, update_info, show_message=False):
+        """Показывает диалог обновления"""
+        # Проверяем, не пропущена ли эта версия
+        settings = QSettings("StickyNotes", "Updates")
+        if settings.value(f"skip_version_{update_info.get('version')}", False):
+            if show_message:
+                QMessageBox.information(None, "Проверка обновлений", 
+                                       f"У вас установлена последняя версия ({self.VERSION})")
+            return
+            
+        dialog = UpdateDialog(update_info, self.VERSION)
+        if dialog.exec_() == QDialog.Accepted:
+            # Показываем уведомление в трее
+            self.tray_icon.showMessage(
+                "Обновление Sticky Notes",
+                f"Загружается версия {update_info.get('version')}",
+                QSystemTrayIcon.Information,
+                3000
+            )
         
     def createNewNote(self):
         note_id = max(self.notes.keys(), default=0) + 1
@@ -1468,63 +1495,6 @@ class StickyNotesApp:
                 self.notes[note_id] = note
         except Exception as e:
             print(f"Ошибка загрузки заметок: {e}")
-            
-    def checkForUpdates(self, show_message=False):
-        """Проверяет наличие обновлений"""
-        settings = QSettings("StickyNotes", "Updates")
-        
-        # Проверяем, когда последний раз проверяли
-        last_check = settings.value("last_update_check")
-        today = datetime.now().strftime("%Y-%m-%d")
-        
-        # Проверяем не чаще раза в день (если не ручная проверка)
-        if not show_message and last_check == today:
-            return
-            
-        self.update_checker = UpdateChecker(self.VERSION, self.UPDATE_URL)
-        self.update_checker.update_available.connect(lambda info: self.showUpdateDialog(info, show_message))
-        self.update_checker.no_update.connect(lambda: self.showNoUpdateMessage(show_message))
-        self.update_checker.error.connect(lambda err: self.showUpdateError(err, show_message))
-        self.update_checker.start()
-        
-        # Сохраняем дату проверки
-        if not show_message:
-            settings.setValue("last_update_check", today)
-    
-    def manualCheckUpdate(self):
-        """Ручная проверка обновлений"""
-        self.checkForUpdates(show_message=True)
-    
-    def showUpdateDialog(self, update_info, show_message=False):
-        """Показывает диалог обновления"""
-        # Проверяем, не пропущена ли эта версия
-        settings = QSettings("StickyNotes", "Updates")
-        if settings.value(f"skip_version_{update_info.get('version')}", False):
-            if show_message:
-                self.showNoUpdateMessage(show_message)
-            return
-            
-        dialog = UpdateDialog(update_info, self)
-        if dialog.exec_() == QDialog.Accepted:
-            # Показываем уведомление в трее
-            self.tray_icon.showMessage(
-                "Обновление Sticky Notes",
-                f"Загружается версия {update_info.get('version')}",
-                QSystemTrayIcon.Information,
-                3000
-            )
-    
-    def showNoUpdateMessage(self, show_message=False):
-        """Показывает сообщение, что обновлений нет"""
-        if show_message:
-            QMessageBox.information(None, "Проверка обновлений", 
-                                   f"У вас установлена последняя версия ({self.VERSION})")
-    
-    def showUpdateError(self, error_msg, show_message=False):
-        """Показывает сообщение об ошибке"""
-        if show_message:
-            QMessageBox.warning(None, "Ошибка проверки обновлений", 
-                               f"Не удалось проверить обновления:\n{error_msg}")
     
     def exitApp(self):
         self.saveNotes()
