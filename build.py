@@ -85,7 +85,7 @@ def create_shortcuts():
             app_path = os.path.abspath("sticky_notes.exe")
             app_dir = os.path.dirname(app_path)
         
-        app_name = "Стикеры-заметки"
+        app_name = "Stickers"
         
         print(f"Приложение: {app_path}")
         print(f"Папка: {app_dir}")
@@ -100,7 +100,7 @@ def create_shortcuts():
             shortcut.Targetpath = app_path
             shortcut.WorkingDirectory = app_dir
             shortcut.IconLocation = app_path
-            shortcut.Description = "Стикеры-заметки"
+            shortcut.Description = "Stickers"
             shortcut.save()
             
             print(f"Ярлык на рабочем столе создан: {shortcut_path}")
@@ -121,7 +121,7 @@ def create_shortcuts():
             shortcut.Targetpath = app_path
             shortcut.WorkingDirectory = app_dir
             shortcut.IconLocation = app_path
-            shortcut.Description = "Стикеры-заметки"
+            shortcut.Description = "Stickers"
             shortcut.save()
             
             print(f"Ярлык в меню Пуск создан: {shortcut_path}")
@@ -152,7 +152,7 @@ def create_shortcuts():
                 shortcut.Targetpath = app_path
                 shortcut.WorkingDirectory = app_dir
                 shortcut.IconLocation = app_path
-                shortcut.Description = "Стикеры-заметки"
+                shortcut.Description = "Stickers"
                 shortcut.save()
                 
                 print(f"Добавлено в автозагрузку (папка): {shortcut_path}")
@@ -167,7 +167,7 @@ def create_shortcuts():
         input("Нажмите Enter для выхода...")
 
 if __name__ == "__main__":
-    print("Создание ярлыков для Стикеры-заметки...")
+    print("Создание ярлыков для Stickers...")
     create_shortcuts()
 '''
     
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     
     # Создаем BAT файл для удобства
     bat_content = '''@echo off
-echo Создание ярлыков для Стикеры-заметки...
+echo Создание ярлыков для Stickers...
 python create_shortcuts.py
 pause
 '''
@@ -222,7 +222,7 @@ def create_installer():
             print(f"Скопирован: {file}")
     
     # Создаем README для установки
-    readme_install = '''# Установка Стикеры-заметки
+    readme_install = '''# Установка Stickers
 
      ## Простая установка:
 
@@ -231,7 +231,7 @@ def create_installer():
 
      ## Ручная установка:
 
-     1. Запустите `Стикеры-заметки.exe`
+     1. Запустите `Stickers.exe`
      2. Для создания ярлыков запустите:
      python create_shortcuts.py
 
@@ -282,7 +282,7 @@ def clean_build():
  print("\nОчистка временных файлов...")
  
  dirs_to_remove = ["build", "__pycache__"]
- files_to_remove = ["Стикеры-заметки.spec"]
+ files_to_remove = ["Stickers.spec"]
  
  for dir_name in dirs_to_remove:
      if os.path.exists(dir_name):
@@ -297,7 +297,7 @@ def clean_build():
 def main():
  """Основная функция сборки"""
  print("=" * 50)
- print("Сборка Стикеры-заметки")
+ print("Сборка Stickers")
  print("=" * 50)
  
  # Проверяем зависимости
@@ -325,7 +325,7 @@ def main():
  
  print("\n" + "=" * 50)
  print("Сборка завершена успешно!")
- print(f"EXE файл: dist\\Стикеры-заметки.exe")
+ print(f"EXE файл: dist\\Stickers.exe")
  print(f"Установщик: {installer}")
  print("=" * 50)
  
